@@ -1,0 +1,30 @@
+{
+  "name": "chunksha",
+  "version": "0.0.1",
+  "description": "lib to compute hash of file in the browser ",
+  "main": "src/2.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "expect.js": "0.3.1"
+  },
+  "scripts": {
+    "test": "mocha test/index2.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/szydan/chunksha.git"
+  },
+  "keywords": [
+    "sha1"
+  ],
+  "author": "Szymon Danielczyk <danielczyk.szymon@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/szydan/chunksha/issues"
+  },
+  "homepage": "https://github.com/szydan/chunksha#readme"
+}
