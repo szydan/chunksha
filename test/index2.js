@@ -177,7 +177,36 @@ describe('sha1 computation', function () {
   });
 
 
-  it('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - loop to benchmark', function () {
+  it('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - so it does NOT fit into single block added twice', function () {
+    var buffer1 = new ArrayBuffer(56);
+    var view1   = new Int8Array(buffer1);
+    view1[0] = 97;
+    view1[1] = 98;
+    view1[2] = 99;
+    for (var i=3;i<56;i++) {
+      view1[i] = 48; // character 0
+    }
+    var buffer2 = new ArrayBuffer(56);
+    var view2   = new Int8Array(buffer2);
+    view2[0] = 97;
+    view2[1] = 98;
+    view2[2] = 99;
+    for (var i=3;i<56;i++) {
+      view2[i] = 48; // character 0
+    }
+
+
+    var expectedAbcHex = '34769c5492b0c2aff5f4f8522d2edfbae8b037e0'
+
+    var sha1 = new Sha1();
+    sha1.update(buffer1);
+    sha1.update(buffer2);
+    expect(sha1.getHex()).to.equal(expectedAbcHex)
+  });
+
+
+
+  xit('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - loop to benchmark', function () {
     this.timeout(0);
     var buffer1 = new ArrayBuffer(56);
     var view1   = new Int8Array(buffer1);

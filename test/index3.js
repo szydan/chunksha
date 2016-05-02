@@ -1,6 +1,43 @@
 var expect = require('expect.js')
-var Sha1 = require('../src/1.js');
+var Sha1 = require('../src/3.js');
 var sha1 = new Sha1();
+
+describe('test', function () {
+
+  xit('Int32', function () {
+
+    function checkEndian(){
+      var a = new ArrayBuffer(4);
+      var b = new Uint8Array(a);
+      var c = new Uint32Array(a);
+      b[0] = 0xa1;
+      b[1] = 0xb2;
+      b[2] = 0xc3;
+      b[3] = 0xd4;
+      if(c[0] == 0xd4c3b2a1) return "little endian";
+      if(c[0] == 0xa1b2c3d4) return "big endian";
+      else throw new Error("Something crazy just happened"); 
+    }
+
+    console.log(checkEndian());
+
+    var b = new ArrayBuffer(4);
+    var view  = new DataView(b);
+    var view32   = new Int32Array(b);
+
+    // 01100111 01000101 00100011 00000001  big-endian
+    var i = 1732584193;
+    view.setInt32(0, i); // big-endian
+
+    expect(view.getInt32(0), i); // big-endian
+    
+    expect(view.getInt32(0, true), i); // little-endian
+    expect(view32[0], i);  
+  });
+});
+
+
+/*
 
 describe('circular shift left', function () {
   it('by 2', function () {
@@ -116,7 +153,7 @@ describe('initialization', function () {
   })
 });
 
-
+*/
 describe('sha1 computation', function () {
 
   it('arrayBuffer with string abc', function () {
@@ -141,7 +178,7 @@ describe('sha1 computation', function () {
   });
 
 
-  it('arrayBuffer with string of 55 bytes (64 - 1 - 8 = 55) bytes - so it still fits into single block', function () {
+  xit('arrayBuffer with string of 55 bytes (64 - 1 - 8 = 55) bytes - so it still fits into single block', function () {
     var buffer1 = new ArrayBuffer(55);
     var view1   = new Int8Array(buffer1);
     view1[0] = 97;
@@ -159,7 +196,7 @@ describe('sha1 computation', function () {
   });
 
 
-  it('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - so it does NOT fit into single block', function () {
+  xit('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - so it does NOT fit into single block', function () {
     var buffer1 = new ArrayBuffer(56);
     var view1   = new Int8Array(buffer1);
     view1[0] = 97;
@@ -176,7 +213,9 @@ describe('sha1 computation', function () {
     expect(sha1.getHex()).to.equal(expectedAbcHex)
   });
 
-  it('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - so it does NOT fit into single block added twice', function () {
+
+
+  xit('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - so it does NOT fit into single block added twice', function () {
     var buffer1 = new ArrayBuffer(56);
     var view1   = new Int8Array(buffer1);
     view1[0] = 97;
@@ -202,6 +241,39 @@ describe('sha1 computation', function () {
     sha1.update(buffer2);
     expect(sha1.getHex()).to.equal(expectedAbcHex)
   });
+
+  xit('arrayBuffer chunks 64 64 and 3', function () {
+    var buffer1 = new ArrayBuffer(64);
+    var view1   = new Int8Array(buffer1);
+    view1[0] = 97;
+    view1[1] = 98;
+    view1[2] = 99;
+    for (var i=3;i<64;i++) {
+      view1[i] = 48; // character 0
+    }
+
+    var buffer2 = new ArrayBuffer(64);
+    var view2   = new Int8Array(buffer2);
+    view2[0] = 97;
+    view2[1] = 98;
+    view2[2] = 99;
+    for (var i=3;i<64;i++) {
+      view2[i] = 48; // character 0
+    }
+
+    var buffer3 = new ArrayBuffer(3);
+    var view3   = new Int8Array(buffer3);
+    view3[0] = 97;
+    view3[1] = 98;
+    view3[2] = 99;
+
+
+    var sha1 = new Sha1();
+    sha1.update(buffer1);
+    sha1.update(buffer2);
+    sha1.update(buffer3);
+    expect(sha1.getHex()).to.equal('67a0d3923b7c73d0547fc2b7ca0050207f32a855')
+  });  
 
 
   xit('arrayBuffer with string  >  55 bytes (64 - 1 - 8 = 55) bytes - loop to benchmark', function () {

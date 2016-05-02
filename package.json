@@ -2,7 +2,7 @@
   "name": "chunksha",
   "version": "0.0.1",
   "description": "lib to compute hash of file in the browser ",
-  "main": "src/2.js",
+  "main": "src/4.js",
   "directories": {
     "test": "test"
   },
@@ -12,7 +12,7 @@
     "expect.js": "0.3.1"
   },
   "scripts": {
-    "test": "mocha test/index2.js"
+    "test": "mocha test/index4.js"
   },
   "repository": {
     "type": "git",

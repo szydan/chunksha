@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <meta charset="UTF-8">
+  <script src="private/rusha.js" type="text/javascript" charset="utf-8"></script>
+  <script src="src/4.js"></script>
+  <script type="text/javascript" charset="utf-8">
+// rusha
+
+function toUTF8Array(str) {
+    var utf8 = [];
+    for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+            utf8.push(0xc0 | (charcode >> 6),
+                      0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+            utf8.push(0xe0 | (charcode >> 12),
+                      0x80 | ((charcode>>6) & 0x3f),
+                      0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+            i++;
+            // UTF-16 encodes 0x10000-0x10FFFF by
+            // subtracting 0x10000 and splitting the
+            // 20 bits of 0x0-0xFFFFF into two halves
+            charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+                      | (str.charCodeAt(i) & 0x3ff));
+            utf8.push(0xf0 | (charcode >>18),
+                      0x80 | ((charcode>>12) & 0x3f),
+                      0x80 | ((charcode>>6) & 0x3f),
+                      0x80 | (charcode & 0x3f));
+        }
+    }
+    return utf8;
+}
+
+
+//var r = new Rusha();
+//var s = "любовь"
+// var a = toUTF8Array(s)
+// console.log(r.digest(a));
+
+// var r = new Rusha();
+// var s = "abc0000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000"
+
+//     s+= "abc0000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000000000"
+//     s+= "0000"
+
+//     s+= "abc"
+
+// var a = toUTF8Array(s)
+// console.log(a)
+// console.log(r.digest(a));
+
+
+  </script>
+  <style>
+    .container {
+      margin: 40px;
+    }
+    .method-switcher{
+      float: left;
+      padding:20px;
+    }
+    .file-drop-area{
+      width: 400px;
+      border: 2px red dashed;
+      padding: 40px;
+      float: left;
+    }
+
+  </style>
+  <body>
+    
+    <div class="container">
+      <div class="method-switcher">
+        <label>Native</label><input type="radio" name="method" value="native"/>
+        <br/>  
+        <label>Rusha</label><input type="radio" name="method" value="rusha"/>  
+        <br/>  
+        <label>Chunksha</label><input type="radio" name="method" value="chunksha"/>  
+        <br/>  
+        <label>Chunksha worker</label><input type="radio" name="method" value="chunkshaworker" checked/>  
+     </div>  
+
+      <div id="dropbox" class="file-drop-area">
+        <input type="file" id="input" onchange="handleFiles(this.files)">
+        <br/>
+        Reading file progress [%]<span id="fileProgress"></span>
+        <br/>
+        Computing hash progress [%]<span id="hashProgress"></span>
+        <br/>
+        Hash <span id="hash"></span>
+        <br/>
+        Execution time [s]: <span id="time"></span>
+        <br/>
+        Error <span id="error"></span>
+      </div>
+    </div>
+  </body>
+<script type="text/javascript">
+
+function dragenter(e) {
+  e.stopPropagation();
+  e.preventDefault();
+}
+
+function dragover(e) {
+  e.stopPropagation();
+  e.preventDefault();
+}
+
+function drop(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  var dt = e.dataTransfer;
+  var files = dt.files;
+  resetResults();
+  handleFiles(files);
+}
+
+function handleFiles(files) {
+  var method = getSelectedRadioValue(methods);
+  switch (method) {
+    case 'chunksha':
+      handleFile(files[0]);
+      break;
+    case 'chunkshaworker':
+      handleFileInWorker(files[0]);
+      break;
+    case 'rusha':
+      handleFileRusha(files[0]);
+      break;
+    case 'native':
+      handleFilesNativeAPI(files[0]);
+      break;
+    default:
+      alert('Unsupported method')
+  }
+}
+
+function getSelectedRadioValue(radios) {
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) {
+      // do whatever you want with the checked radio
+      return radios[i].value
+    }
+  }
+  return null;
+}
+
+var dropbox = document.getElementById("dropbox");
+  dropbox.addEventListener("dragenter", dragenter, false);
+  dropbox.addEventListener("dragover", dragover, false);
+  dropbox.addEventListener("drop", drop, false);
+
+var fileProgress = document.getElementById('fileProgress');
+var hashProgress = document.getElementById('hashProgress');
+var hashEl = document.getElementById('hash');
+var timeEl = document.getElementById('time');
+var errorEl = document.getElementById('error');
+
+var methods = document.getElementsByName('method');
+
+function resetResults () {
+  fileProgress.innerHTML = '';
+  hashProgress.innerHTML = '';
+  hashEl.innerHTML = '';
+  timeEl.innerHTML = '';
+  errorEl.innerHTML = '';
+}
+
+//================================
+function read(sha1, file, n, chunkSize, totalParts, callback) {
+  var start = n * chunkSize;
+  var end = start + chunkSize;
+  if (n === totalParts - 1) {
+    end = file.size;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    sha1.update(e.target.result);
+    fileProgress.innerHTML = end/file.size*100;
+    if (n === totalParts - 1) {
+      callback(sha1.getHex());
+      return;
+    }
+    read(sha1, file, n+1, chunkSize, totalParts, callback);
+  };
+
+  var blob = file.slice(start, end);
+  reader.readAsArrayBuffer(blob);
+}
+
+function handleFile (file) {
+  var start = new Date().getTime();
+  var chunkSize = 1 * 1024 * 1024;
+  var sha1 = new Sha1();
+  var totalParts = Math.ceil(file.size/chunkSize);
+  read(sha1, file, 0, chunkSize, totalParts, function (hash) {
+    var stop = new Date().getTime();
+    hashEl.innerHTML = hash;
+    timeEl.innerHTML = (stop-start)/1000;
+  });
+}
+
+//================================
+   
+function handleFileInWorker(file) {
+   var worker = new Worker('src/4.js');
+   worker.onmessage = function(e) {
+     if (e.data.name === 'progress') {
+       hashProgress.innerHTML = e.data.data;
+     } else if (e.data.name === 'hash') {
+       hashEl.innerHTML = e.data.data;
+     } else if (e.data.name === 'totalTime') {
+       timeEl.innerHTML = e.data.data;
+     }
+   };
+   worker.onerror = function (event) {
+     console.log(event.message, event);
+   };
+   worker.postMessage(file);
+}
+
+//================================
+
+function arrayBufferToHex(arrayBuffer) {
+  var i, x, hex_tab = '0123456789abcdef', res = [], binarray = new Uint8Array(arrayBuffer);
+    for (i = 0; i < binarray.length; i++) {
+        x = binarray[i];
+        res[i] = hex_tab.charAt(x >> 4 & 15) + hex_tab.charAt(x >> 0 & 15);
+    }
+    return res.join('');
+}
+
+function handleFilesNativeAPI(file) {
+  var start = new Date().getTime();
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var crypto = window.crypto || window.msCrypto;
+    if(crypto.subtle) {
+       crypto.subtle.digest({name: "SHA-1"}, event.target.result)
+      .then(function(hash){
+        var hex = arrayBufferToHex(hash);
+        hashEl.innerHTML = hex;
+        var stop = new Date().getTime();
+        timeEl.innerHTML = (stop-start)/1000;
+      })
+      .catch(function(err){
+        console.error(err);
+      }); 
+    } else {
+      console.log("Crypto not supported")
+    }
+  };
+  reader.onprogress = function (event) {
+    var p = event.loaded/event.total * 100;
+    fileProgress.innerHTML = p.toFixed(2) + '%';
+  }
+  reader.onerror = function(event) {
+    console.error("File could not be read! Code " + event.target.error.code);
+  };
+  reader.readAsArrayBuffer(file)
+}
+
+//================================
+
+function handleFileRusha (file) {
+  var startTime = new Date().getTime();
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var worker = new Worker('private/rusha.js');
+    worker.addEventListener('message', function (e) {
+      if (e.data.progress) {
+        hashProgress.innerHTML = e.data.progress * 100;
+      } else if (e.data.hash) {
+        var stopTime = new Date().getTime();
+        timeEl.innerHTML = (stopTime - startTime)/1000;
+        hash.innerHTML = e.data.hash;
+      } else {
+        error.innerHTML = e.data.error
+      }
+    }, false);
+    worker.postMessage({id: file.name, data: event.target.result});
+  };
+  reader.onprogress = function(event) {
+    fileProgress.innerHTML = (event.loaded/event.total * 100)
+  };
+  reader.readAsArrayBuffer(file);
+}
+</script>
+</html>
