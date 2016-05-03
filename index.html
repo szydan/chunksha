@@ -110,6 +110,7 @@ There is no update method to compute hash in chunks</li>
     <script src="javascripts/scale.fix.js"></script>
     
   </body>
+  <script type="text/javascript" src="javascripts/rusha.js"></script>
   <script type="text/javascript" src="javascripts/chunksha.js"></script>
   <script type="text/javascript">
 function getSelectedRadioValue(radios) {
@@ -142,8 +143,23 @@ function drop(e) {
 }
 
 function handleFiles(files) {
-  handleFileInWorker(files[0]);
-  handleFile(files[0]);
+  var method = getSelectedRadioValue(methods);
+  switch (method) {
+    case 'chunksha':
+      handleFile(files[0]);
+      break;
+    case 'chunkshaworker':
+      handleFileInWorker(files[0]);
+      break;
+    case 'rusha':
+      handleFileRusha(files[0]);
+      break;
+    case 'native':
+      handleFilesNativeAPI(files[0]);
+      break;
+    default:
+      alert('Unsupported method')
+  }
 }
 
 var dropbox = document.getElementById("dropbox");
@@ -221,5 +237,70 @@ function handleFileInWorker(file) {
    worker.postMessage(file);
 }
 
+
+function arrayBufferToHex(arrayBuffer) {
+  var i, x, hex_tab = '0123456789abcdef', res = [], binarray = new Uint8Array(arrayBuffer);
+    for (i = 0; i < binarray.length; i++) {
+        x = binarray[i];
+        res[i] = hex_tab.charAt(x >> 4 & 15) + hex_tab.charAt(x >> 0 & 15);
+    }
+    return res.join('');
+}
+
+function handleFilesNativeAPI(file) {
+  var start = new Date().getTime();
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var crypto = window.crypto || window.msCrypto;
+    if(crypto.subtle) {
+       crypto.subtle.digest({name: "SHA-1"}, event.target.result)
+      .then(function(hash){
+        var hex = arrayBufferToHex(hash);
+        hashEl.innerHTML = hex;
+        var stop = new Date().getTime();
+        timeEl.innerHTML = (stop-start)/1000;
+      })
+      .catch(function(err){
+        console.error(err);
+      }); 
+    } else {
+      console.log("Crypto not supported")
+    }
+  };
+  reader.onprogress = function (event) {
+    var p = event.loaded/event.total * 100;
+    fileProgress.innerHTML = p.toFixed(2) + '%';
+  }
+  reader.onerror = function(event) {
+    console.error("File could not be read! Code " + event.target.error.code);
+  };
+  reader.readAsArrayBuffer(file)
+}
+
+//================================
+
+function handleFileRusha (file) {
+  var startTime = new Date().getTime();
+  var reader = new FileReader();
+  reader.onload = function(event) {
+    var worker = new Worker('javascripts/rusha.js');
+    worker.addEventListener('message', function (e) {
+      if (e.data.progress) {
+        hashProgress.innerHTML = e.data.progress * 100;
+      } else if (e.data.hash) {
+        var stopTime = new Date().getTime();
+        timeEl.innerHTML = (stopTime - startTime)/1000;
+        hash.innerHTML = e.data.hash;
+      } else {
+        error.innerHTML = e.data.error
+      }
+    }, false);
+    worker.postMessage({id: file.name, data: event.target.result});
+  };
+  reader.onprogress = function(event) {
+    fileProgress.innerHTML = (event.loaded/event.total * 100)
+  };
+  reader.readAsArrayBuffer(file);
+}
   </script>    
 </html>
