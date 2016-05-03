@@ -221,7 +221,7 @@ function handleFile (file) {
 //================================
    
 function handleFileInWorker(file) {
-   var worker = new Worker('src/5.js');
+   var worker = new Worker('javascripts/chunksha.js');
    worker.onmessage = function(e) {
      if (e.data.name === 'progress') {
        hashProgress.innerHTML = e.data.data;
