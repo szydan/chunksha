@@ -368,7 +368,7 @@ ChunkSha.prototype.getHex = function () {
 };
 
 
-function read(chunkSha, file, n, chunkSize, totalParts, startTime, callback) {
+function readAsync(chunkSha, file, n, chunkSize, totalParts, startTime, callback) {
   var start = n * chunkSize;
   var end = start + chunkSize;
   if (n === totalParts - 1) {
@@ -376,11 +376,9 @@ function read(chunkSha, file, n, chunkSize, totalParts, startTime, callback) {
   }
   var blob = file.slice(start, end);
 
-  var reader
-  // here for firefox !!! make sure that it is used only for firefox !!!
-  if (typeof FileReaderSync !== 'undefined') {
-    reader = new FileReaderSync();
-    chunkSha.update(reader.readAsArrayBuffer(blob));
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    chunkSha.update(e.target.result);
     callback({name: 'progress', data: end/file.size*100});
     if (n === totalParts - 1) {
       var stopTime = new Date().getTime();
@@ -388,31 +386,49 @@ function read(chunkSha, file, n, chunkSize, totalParts, startTime, callback) {
       callback({name: 'totalTime', data: ((stopTime - startTime)/1000)});
       return;
     }
-    read(chunkSha, file, n+1, chunkSize, totalParts, startTime, callback);
-  } else {
-    reader = new FileReader();
-    reader.onload = function(e) {
-      chunkSha.update(e.target.result);
-      callback({name: 'progress', data: end/file.size*100});
-      if (n === totalParts - 1) {
-        var stopTime = new Date().getTime();
-        callback({name: 'hash', data: chunkSha.getHex()});
-        callback({name: 'totalTime', data: ((stopTime - startTime)/1000)});
-        return;
-      }
-      read(chunkSha, file, n+1, chunkSize, totalParts, startTime, callback);
-    };
-    reader.readAsArrayBuffer(blob);
-  }
+    readAsync(chunkSha, file, n+1, chunkSize, totalParts, startTime, callback);
+  };
+  reader.readAsArrayBuffer(blob);
 }
 
+function readSync(chunkSha, file, n, chunkSize, totalParts, startTime, callback) {
+  var start = n * chunkSize;
+  var end = start + chunkSize;
+  if (n === totalParts - 1) {
+    end = file.size;
+  }
+  var blob = file.slice(start, end);
+
+  var reader = new FileReaderSync();
+  chunkSha.update(reader.readAsArrayBuffer(blob));
+  callback({name: 'progress', data: end/file.size*100});
+  if (n === totalParts - 1) {
+    var stopTime = new Date().getTime();
+    callback({name: 'hash', data: chunkSha.getHex()});
+    callback({name: 'totalTime', data: ((stopTime - startTime)/1000)});
+  }
+} 
 
 function handleFile (file, callback) {
   var start = new Date().getTime();
   var chunkSize = 1 * 1024 * 1024;
   var chunkSha = new ChunkSha();
   var totalParts = Math.ceil(file.size/chunkSize);
-  read(chunkSha, file, 0, chunkSize, totalParts, start, callback);
+  if (typeof FileReaderSync !== 'undefined') {
+    // loop
+    // Aug 2016 - Chrome, Firefox, Safari, Opera 
+    callback({name: 'filereader', data: 'sync'});
+    for (var n = 0; n < totalParts; n++) {
+      readSync(chunkSha, file, n, chunkSize, totalParts, start, callback);
+    }
+  } else {
+    callback({name: 'filereader', data: 'async'});
+    // recursion
+    // TODO: as our worker async algorithm is recursive 
+    // to make sure we would not cross the stack call limit 
+    // lets increase the chunk size to make sure that the totalParts
+    readAsync(chunkSha, file, 0, chunkSize, totalParts, start, callback);
+  }
 }
 
 this.onmessage = function onMessage(e) {
