@@ -19,7 +19,7 @@ This is just a toy project to implement sha1 and fulfill the above
 
 ## Usage
 
-```
+```html
 <!DOCTYPE html>
 <html>
   <head>
@@ -67,17 +67,17 @@ the server is needed to overcome a webworker security error
 python -m SimpleHTTPServer 8000
 ```
 
-file         |   size   | base   | 1.js   | 2.js   | 4.js [s]| 5.js [s]| sha1
--------------|----------|--------|--------|--------------------------------------  
-medium.mp4   |   2.5 MB |  0.067 |   1.19 |   0.79 |   0.094 |   0.058 | dce6ae98c6a7187b3e08b389edbeff47e9d2e8a3    
-medium.zip   |  24.3 MB |  0.357 |  11.16 |   7.75 |   0.62  |   0.341 | b1ec91671e35882cd684db2b3b4c598db55a2544    
-good-big.zip | 492.1 MB |  6.557 | 237.6  | 156.4  |  12.12  |   6.324 | 77d201055db8403e4079715bfccd8b442814cb34    
-wrong.zip    | 840.7 MB | 11.102 | 400.1  | 275.0  |  22.14  |  10.871 | f7aa6d9265c8ec5f52b07f69f98c2740c91c4ce1    
-mernis.tar.gz|  1.56 GB | 20.915 |        |        |  40.09  |  19.403 | aced1b7344c25b8c56fd330f66c19ae8cb9133a 
-snapshot.sav |  3.23 GB |    X   |        |        |         |  37.559 | 204676dcc0fdea3789e57da893353572f0316a72
-ubuntu.vdi   |  5.56 GB |    X   |        |        |         |  71.859 | 8dbcad7decb8eae2577bd45854e3a8111232dcba
-windows.vmdk | 22.58 GB |    X   |        |        |         | 346.364 | 3ec5cc90676d136ba552b0a7d391932b81c2e155
-100k iter    | 55 bytes |        |  74.2  |  65.4  |  65.4   |  38.7   |   
+file         |   size   | base   | 1.js   | 2.js   | 4.js    | 5.js       | sha1
+-------------|----------|--------|--------|--------|---------|------------|------------  
+medium.mp4   |   2.5 MB |  0.067 |   1.19 |   0.79 |   0.094 |   **0.09** | dce6ae98c6a7187b3e08b389edbeff47e9d2e8a3    
+medium.zip   |  24.3 MB |  0.357 |  11.16 |   7.75 |   0.62  |   **0.34** | b1ec91671e35882cd684db2b3b4c598db55a2544    
+good-big.zip | 492.1 MB |  6.557 | 237.6  | 156.4  |  12.12  |   **6.31** | 77d201055db8403e4079715bfccd8b442814cb34    
+wrong.zip    | 840.7 MB | 11.102 | 400.1  | 275.0  |  22.14  |  **10.86** | f7aa6d9265c8ec5f52b07f69f98c2740c91c4ce1    
+mernis.tar.gz|  1.56 GB | 20.915 |        |        |  40.09  |  **19.40** | aced1b7344c25b8c56fd330f66c19ae8cb9133a 
+snapshot.sav |  3.23 GB |    X   |        |        |         |  **37.56** | 204676dcc0fdea3789e57da893353572f0316a72
+ubuntu.vdi   |  5.56 GB |    X   |        |        |         |  **71.86** | 8dbcad7decb8eae2577bd45854e3a8111232dcba
+windows.vmdk | 22.58 GB |    X   |        |        |         | **346.35** | 3ec5cc90676d136ba552b0a7d391932b81c2e155
+100k iter    | 55 bytes |        |  74.2  |  65.4  |  65.4   |  **38.70** |   
 
 
 ![Mou icon](./benchmark.png)
