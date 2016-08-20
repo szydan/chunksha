@@ -229,10 +229,13 @@ function handleFileInWorker(file) {
        hashEl.innerHTML = e.data.data;
      } else if (e.data.name === 'totalTime') {
        timeEl.innerHTML = e.data.data;
+     } else {
+      console.log(e.data.name);
+      console.log(e.data.data);
      }
    };
    worker.onerror = function (event) {
-     console.log(event);
+     console.log(event.message, event);
    };
    worker.postMessage(file);
 }
