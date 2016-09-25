@@ -2,7 +2,7 @@
 <html>
   <meta charset="UTF-8">
   <script src="private/rusha.js" type="text/javascript" charset="utf-8"></script>
-  <script src="src/5.js" charset="utf-8"></script>
+  <script src="src/chunksha.js" charset="utf-8"></script>
   <script type="text/javascript" charset="utf-8">
 
 function toUTF8Array(str) {
@@ -34,6 +34,16 @@ function toUTF8Array(str) {
         }
     }
     return utf8;
+}
+
+function textToArrayBuffer(str) {
+  var data = toUTF8Array(str);
+  var arrayBuffer = new ArrayBuffer(data.length);
+  var view   = new Int8Array(arrayBuffer);
+  for (var i=0;i<data.length;i++){
+    view[i] = data[i];
+  } 
+  return arrayBuffer;     
 }
 
 
@@ -70,6 +80,7 @@ function toUTF8Array(str) {
   <style>
     .container {
       margin: 40px;
+      float: left;
     }
     .method-switcher{
       float: left;
@@ -86,6 +97,8 @@ function toUTF8Array(str) {
   <body>
     
     <div class="container">
+      <h1>SHA1</h1>
+      
       <div class="method-switcher">
         <label>Native</label><input type="radio" name="method" value="native"/>
         <br/>  
@@ -110,6 +123,14 @@ function toUTF8Array(str) {
         Error <span id="error"></span>
       </div>
     </div>
+
+    <div class="container">
+      <h1>HMAC SHA1</h1>
+      <label>Key</label>
+      <input type="text" id="hmackey" value="abc"/>
+      <input type="file" id="hmacfile" onchange="handleHmacFiles(this.files)">
+    </div>    
+
   </body>
 <script type="text/javascript">
 
@@ -150,6 +171,12 @@ function handleFiles(files) {
     default:
       alert('Unsupported method')
   }
+}
+
+function handleHmacFiles(files) {
+  var key = document.getElementById('hmackey').value;
+  var keyArrayBuffer = textToArrayBuffer(key);
+  handleFileInWorker(files[0], keyArrayBuffer);
 }
 
 function getSelectedRadioValue(radios) {
@@ -220,8 +247,8 @@ function handleFile (file) {
 
 //================================
    
-function handleFileInWorker(file) {
-   var worker = new Worker('src/5.js');
+function handleFileInWorker(file, keyArrayBuffer) {
+   var worker = new Worker('src/chunksha.js');
    worker.onmessage = function(e) {
      if (e.data.name === 'progress') {
        hashProgress.innerHTML = e.data.data;
@@ -237,7 +264,7 @@ function handleFileInWorker(file) {
    worker.onerror = function (event) {
      console.log(event.message, event);
    };
-   worker.postMessage(file);
+   worker.postMessage({file: file, key: keyArrayBuffer});
 }
 
 //================================
