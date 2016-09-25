@@ -1,5 +1,5 @@
 var expect = require('expect.js')
-var ChunkSha = require('../src/5.js');
+var ChunkSha = require('../src/chunksha.js');
 var chunkSha = new ChunkSha();
 
 describe('ChunkSha computation', function () {
